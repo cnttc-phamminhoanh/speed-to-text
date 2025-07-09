@@ -1,0 +1,6 @@
+node_modules
+.vscode
+.env.backend.development
+.env.backend.test
+.env.backend.production
+.env.docker
