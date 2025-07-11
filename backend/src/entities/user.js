@@ -12,6 +12,7 @@ const User = new EntitySchema({
     user_name: {
       type: 'varchar',
       length: 255,
+      unique: true,
       nullable: false
     },
     phone_number: {

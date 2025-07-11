@@ -1,4 +1,4 @@
-# Speed-To-Text
+# Speech-To-Text
 ## Requirement:
 - Install docker to start services
 ## Build & start services:

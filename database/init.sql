@@ -18,7 +18,7 @@ CREATE TYPE "JobStatus" AS ENUM (
 
 CREATE TABLE IF NOT EXISTS "users" (
   "user_id" uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
-  "user_name" varchar(255) NOT NULL,
+  "user_name" varchar(255) UNIQUE NOT NULL,
   "phone_number" varchar(20),
   "email" varchar(255) UNIQUE NOT NULL,
   "password_hash" varchar(255) NOT NULL,

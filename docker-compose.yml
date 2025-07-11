@@ -17,6 +17,33 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - backend-network
+    restart: unless-stopped
+
+  redis-service:
+    image: redis:7-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_USER: ${REDIS_USER}
+    ports:
+      - "${REDIS_HOST_PORT}:6379"
+    command: >
+      sh -c "
+        mkdir -p /etc/redis &&
+        echo 'user default off' > /etc/redis/users.acl &&
+        echo 'user ${REDIS_USER} on >${REDIS_PASSWORD} ~* +@all' >> /etc/redis/users.acl &&
+        redis-server --aclfile /etc/redis/users.acl
+      "
+    healthcheck:
+      test: ["CMD", "redis-cli", "-u", "redis://${REDIS_USER}:${REDIS_PASSWORD}@localhost", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend-network
+    restart: unless-stopped
+
   backend-service:
     build: ./backend
     environment:
@@ -29,11 +56,18 @@ services:
     depends_on:
       database-service:
         condition: service_healthy
+      redis-service:
+        condition: service_started
     networks:
       - backend-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     name: ${PROJECT_NAME}_postgres_data
+  redis_data:
+    name: ${PROJECT_NAME}_redis_data
+
 networks:
   backend-network:
     name: ${PROJECT_NAME}_network
