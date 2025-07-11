@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const HttpError = require('http-errors')
 const env = require('./config/environment')
+const APIs_V1 = require('./routes/v1')
 const corsOptions = require('./config/cors')
 const errorHandlingMiddleware = require('./middleware/errorHandling')
 const { CONNECT_DB, CLOSE_DB } = require('./config/data/database')
@@ -14,6 +15,8 @@ const START_SERVER = () => {
 
   app.use(cors(corsOptions))
   app.use(express.json())
+
+  app.use('/v1', APIs_V1)
 
   app.use(() => {
     throw HttpError.NotFound('Route Not Found')
