@@ -12,7 +12,8 @@ const userRepository = dataSource.getRepository(User)
 const signupUser = async ({
   user_name,
   email,
-  password
+  password,
+  ...data
 }) => {
   const [existingUserByUserName, existingUserByEmail] = await Promise.all([
     userRepository.findOne({ where: { user_name } }),
@@ -30,6 +31,7 @@ const signupUser = async ({
   const password_hash = bcrypt.hashSync(password, parseInt(env.BCRYPT_SALT))
 
   const newUser = await userRepository.save({
+    ...data,
     user_name,
     email,
     password_hash,
@@ -38,7 +40,7 @@ const signupUser = async ({
 
   const activationToken = generateActivationToken(newUser.user_id)
 
-  await redis.set(`activation:${activationToken}`, newUser.user_id, 'EX', 300)
+  await redis.set(`activation:${activationToken}`, newUser.user_id, 'EX', env.REDIS_ACTIVATION_TOKEN_DURATION)
 
   await sendActivationEmail(newUser.email, activationToken)
 
@@ -66,14 +68,6 @@ const activateAccount = async ({ token }) => {
     throw HttpError.BadRequest('User not found or already activated')
   }
 
-  // const updateUser = {
-  //   ...user,
-  //   is_active: true,
-  //   last_activated_at: new Date()
-  // }
-
-  // await userRepository.save(updateUser)
-
   const last_activated_at = new Date()
 
   await userRepository.update(
@@ -93,7 +87,43 @@ const activateAccount = async ({ token }) => {
   }
 }
 
+const resendActivation = async ({ email }) => {
+  const user = await userRepository.findOne({
+    where: {
+      email,
+      is_active: false
+    }
+  })
+
+  if (!user) {
+    throw HttpError.BadRequest('Email does not exist or account has been activated')
+  }
+
+  const resendKey = `resend:${email}`
+  const currentCount = await redis.incr(resendKey)
+
+  if (currentCount === 1) {
+    await redis.expire(resendKey, env.REDIS_EMAIL_RESEND_WINDOW)
+  }
+
+  if (currentCount > env.REDIS_EMAIL_RESEND_LIMIT) {
+    throw HttpError.TooManyRequests(`Please wait ${env.REDIS_EMAIL_RESEND_WINDOW / 60} minutes before submitting your request`)
+  }
+
+  const activationToken = generateActivationToken(user.user_id)
+
+  await redis.set(`activation:${activationToken}`, user.user_id, 'EX', env.REDIS_ACTIVATION_TOKEN_DURATION)
+
+  await sendActivationEmail(email, activationToken)
+
+  return {
+    email,
+    resend_count: currentCount
+  }
+}
+
 module.exports.authService = {
   signupUser,
-  activateAccount
+  activateAccount,
+  resendActivation
 }

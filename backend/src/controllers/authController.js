@@ -26,7 +26,21 @@ const activateAccount = async (req, res, next) => {
   }
 }
 
+const resendActivation = async (req, res, next) => {
+  try {
+    const activation = await authService.resendActivation(req.validatedData.body)
+
+    return res.status(200).json({
+      message: 'Activation email resent, please check your email',
+      data: activation
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 module.exports.authController = {
   signupUser,
-  activateAccount
+  activateAccount,
+  resendActivation
 }
