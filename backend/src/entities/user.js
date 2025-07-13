@@ -29,7 +29,8 @@ const User = new EntitySchema({
     password_hash: {
       type: 'varchar',
       length: 255,
-      nullable: false
+      nullable: false,
+      select: false
     },
     is_active: {
       type: 'boolean',
@@ -42,7 +43,8 @@ const User = new EntitySchema({
     refresh_token: {
       type: 'varchar',
       length: 255,
-      nullable: true
+      nullable: true,
+      select: false
     },
     refresh_token_expires_at: {
       type: 'timestamp',
@@ -50,11 +52,12 @@ const User = new EntitySchema({
     },
     created_at: {
       type: 'timestamp',
-      default: () => 'NOW()'
+      default: () => 'CURRENT_TIMESTAMP'
     },
     updated_at: {
       type: 'timestamp',
-      nullable: true
+      default: () => 'CURRENT_TIMESTAMP',
+      updateDate: true
     }
   }
 })

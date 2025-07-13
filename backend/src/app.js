@@ -18,9 +18,10 @@ const START_SERVER = () => {
 
   app.use('/v1', APIs_V1)
 
-  app.use(() => {
-    throw HttpError.NotFound('Route Not Found')
+  app.use((req, res, next) => {
+    next(HttpError.NotFound('Route Not Found'))
   })
+
   app.use(errorHandlingMiddleware)
 
   const server = app.listen(port, hostname, () => {

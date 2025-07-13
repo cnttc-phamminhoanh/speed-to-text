@@ -2,16 +2,33 @@ const HttpError = require('http-errors')
 
 const validateDto = (schemaDto) => async (req, res, next) => {
   try {
-    const value = await schemaDto.validateAsync(req, { abortEarly: false })
+    const dataToValidate = {
+      body: req.body,
+      params: req.params,
+      query: req.query,
+      headers: req.headers
+    }
 
-    req.body = value.body
-    req.params = value.params
-    req.query = value.query
-    req.headers = value.headers
+    const validatedData = await schemaDto.validateAsync(dataToValidate, {
+      abortEarly: false
+    })
+
+    req.validatedData = {
+      body: validatedData.body || {},
+      params: validatedData.params || {},
+      query: validatedData.query || {},
+      headers: validatedData.headers || {}
+    }
 
     next()
   } catch (error) {
-    next(HttpError.UnprocessableEntity(error.message))
+    const errors = error.details.map(detail => ({
+      field: detail.path.join('.'),
+      message: detail.message.replace(/['"]+/g, ''),
+      type: detail.type
+    }))
+
+    next(HttpError.UnprocessableEntity({ errors }))
   }
 }
 

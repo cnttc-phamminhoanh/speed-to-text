@@ -26,6 +26,16 @@ const signupUserDto = Joi.object({
   })
 }).unknown(true)
 
+const activationDto = Joi.object({
+  query: Joi.object({
+    token: Joi.string()
+      .pattern(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/)
+      .message('Invalid activation token')
+      .required()
+  })
+}).unknown(true)
+
 module.exports = {
-  signupUserDto
+  signupUserDto,
+  activationDto
 }

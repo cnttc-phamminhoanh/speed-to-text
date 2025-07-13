@@ -2,7 +2,7 @@ const { authService } = require('..//services/authService')
 
 const signupUser = async (req, res, next) => {
   try {
-    const newUser = await authService.signupUser(req.body)
+    const newUser = await authService.signupUser(req.validatedData.body)
 
     return res.status(201).json({
       message: 'Registration successful, please check your email to activate your account',
@@ -13,6 +13,20 @@ const signupUser = async (req, res, next) => {
   }
 }
 
+const activateAccount = async (req, res, next) => {
+  try {
+    const userAccount = await authService.activateAccount(req.validatedData.query)
+
+    return res.status(200).json({
+      message: 'Account activated successfully',
+      user: userAccount
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 module.exports.authController = {
-  signupUser
+  signupUser,
+  activateAccount
 }

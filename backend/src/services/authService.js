@@ -14,7 +14,6 @@ const signupUser = async ({
   email,
   password
 }) => {
-
   const [existingUserByUserName, existingUserByEmail] = await Promise.all([
     userRepository.findOne({ where: { user_name } }),
     userRepository.findOne({ where: { email } })
@@ -43,9 +42,58 @@ const signupUser = async ({
 
   await sendActivationEmail(newUser.email, activationToken)
 
+  delete newUser.password_hash
+  delete newUser.refresh_token
+
   return newUser
 }
 
+const activateAccount = async ({ token }) => {
+  const user_id = await redis.get(`activation:${token}`)
+
+  if (!user_id) {
+    throw HttpError.BadRequest('Activation token is invalid or expired')
+  }
+
+  const user = await userRepository.findOne({
+    where: {
+      user_id,
+      is_active: false
+    }
+  })
+
+  if (!user) {
+    throw HttpError.BadRequest('User not found or already activated')
+  }
+
+  // const updateUser = {
+  //   ...user,
+  //   is_active: true,
+  //   last_activated_at: new Date()
+  // }
+
+  // await userRepository.save(updateUser)
+
+  const last_activated_at = new Date()
+
+  await userRepository.update(
+    { user_id },
+    {
+      is_active: true,
+      last_activated_at
+    }
+  )
+
+  await redis.del(`activation:${token}`)
+
+  return {
+    ...user,
+    is_active: true,
+    last_activated_at
+  }
+}
+
 module.exports.authService = {
-  signupUser
+  signupUser,
+  activateAccount
 }
